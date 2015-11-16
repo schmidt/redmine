@@ -80,7 +80,7 @@ class Token < ActiveRecord::Base
   def delete_previous_tokens
     if user
       scope = Token.where(:user_id => user.id, :action => action)
-      if action == 'session'
+      if action == 'session' || action == 'autologin'
         ids = scope.order(:updated_on => :desc).offset(9).ids
         if ids.any?
           Token.delete(ids)
