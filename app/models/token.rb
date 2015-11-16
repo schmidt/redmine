@@ -72,7 +72,23 @@ class Token < ActiveRecord::Base
 
   # Delete all expired tokens
   def self.destroy_expired
-    Token.where("action NOT IN (?) AND created_on < ?", ['feeds', 'api', 'session'], Time.now - validity_time).delete_all
+    t = Token.arel_table
+
+    # Unknown actions have default validity_time
+    condition = t[:action].not_in(self.actions.keys).and(t[:created_on].lt(invalid_when_created_before))
+
+    self.actions.each do |action, options|
+      validity_time = invalid_when_created_before(action)
+
+      # Do not delete tokens, which don't become invalid
+      next if validity_time.nil?
+
+      condition = condition.or(
+        t[:action].eq(action).and(t[:created_on].lt(validity_time))
+      )
+    end
+
+    Token.where(condition).delete_all
   end
 
   # Returns the active user who owns the key for the given action
