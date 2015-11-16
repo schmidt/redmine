@@ -29,23 +29,25 @@ class TokenTest < ActiveSupport::TestCase
 
   def test_create_should_remove_existing_tokens
     user = User.find(1)
-    t1 = Token.create(:user => user, :action => 'autologin')
-    t2 = Token.create(:user => user, :action => 'autologin')
+    t1 = Token.create(:user => user, :action => 'register')
+    t2 = Token.create(:user => user, :action => 'register')
     assert_not_equal t1.value, t2.value
     assert !Token.exists?(t1.id)
     assert  Token.exists?(t2.id)
   end
 
-  def test_create_session_token_should_keep_last_10_tokens
+  def test_create_session_or_autologin_token_should_keep_last_10_tokens
     Token.delete_all
     user = User.find(1)
 
-    assert_difference 'Token.count', 10 do
-      10.times { Token.create!(:user => user, :action => 'session') }
-    end
+    ["autologin", "session"].each do |action|
+      assert_difference 'Token.count', 10 do
+        10.times { Token.create!(:user => user, :action => action) }
+      end
 
-    assert_no_difference 'Token.count' do
-      Token.create!(:user => user, :action => 'session')
+      assert_no_difference 'Token.count' do
+        Token.create!(:user => user, :action => action)
+      end
     end
   end
 
